@@ -1,0 +1,103 @@
+{% extends "parent.html" %}
+
+{% block content %}
+<div align="right">
+    <button class="btn btn-secondary btn-lg" data-toggle="modal" data-target="#createModal">Create
+        Repository</button>
+</div>
+<br>
+<div class="container-fluid" id="repository_div">
+
+</div>
+
+<!-- 모달 영역 -->
+<div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Create Repository</h4>
+            </div>
+            <div class="modal-body" style="line-height: 50px;" id="createRepoData">
+                Repository Name <input type="text" class="form-control" style="height: 35px;" id="repoData_name" />
+                Password <input type="password" class="form-control" style="height: 35px;" id="repoData_password" />
+                Re-Enter <input type="password" class="form-control" style="height: 35px;"
+                    id="repoData_password_re_enter" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="create_repository()">확인</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">취소</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block ch4njun %}
+{{ block.super }}
+<script>
+    function create_repository() {
+        var name = $('#repoData_name').val();
+        var password = $('#repoData_password').val();
+        var reenter = $('#repoData_password_re_enter').val();
+
+        if (name === '') {
+            alert('Please enter a name!');
+        } else if (password === '') {
+            alert('Please enter a password!');
+        } else if (reenter === '') {
+            alert('Please enter a password re-enter!');
+        } else {
+            if (password === reenter) {
+                $.ajax({
+                    "url": "/repositoryCheckName",
+                    "type": "GET",
+                    "data": { repo_title: name },
+                    "success": function (data) {
+                        if (data.data.length > 0) {
+                            alert('Repository Name \'' + name + '\' is already exists!!');
+                        } else {
+                            $.ajax({
+                                "url": "/createRepository",
+                                "type": "GET",
+                                "data": { repo_title: name, repo_password: password },
+                                "success": function (data) {
+                                    $('#repoData_name').val('');
+                                    $('#repoData_password').val('');
+                                    $('#repoData_password_re_enter').val('');
+                                    $("#createModal").modal("hide");
+
+                                    $.ajax({
+                                        "url": "/repositorySearch",
+                                        "type": "GET",
+                                        "data": {},
+                                        "success": function (data) {
+                                            $('#repository_div').empty();
+
+                                            var length = data.data.length;
+                                            var real_length = length;
+                                            for (var i = 0; i < length + (3 - (length % 3)); ++i) {
+                                                if (i % 3 == 0) {
+                                                    var parentDiv = $('<div class="row"></div>').appendTo($("#repository_div"));
+                                                }
+                                                var div = $('<div class="col"></div>').appendTo(parentDiv);
+
+                                                if (i < real_length) {
+                                                    var div2 = $('<div class="card bg-light"></div>').appendTo(div);
+                                                    var div3 = $('<div class="card-body text-center"></div>').appendTo(div2);
+                                                    $('<a class="card-title"></a>').attr("href", "scriptBoardList/" + data.data[i].repo_id).text(data.data[i].repo_title).appendTo(div3);
+                                                    $('<p class="card-text" style="font-size:9pt"></p>').text("script: " + data.data[i].repo_post_count).appendTo(div3);
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
+                });
+            } else {
+                alert('Password and Re-enter are different!');
+            }
+        }
+    }
+</script>
+{% endblock %}

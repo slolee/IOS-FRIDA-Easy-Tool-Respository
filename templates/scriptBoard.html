@@ -1,0 +1,266 @@
+{% extends "parent.html" %}
+
+{% block content %}
+<div>
+    <button class="btn btn-secondary" data-toggle="modal" data-target="#deleteModal">Delete Repository</button>
+    <button class="btn btn-secondary" data-toggle="modal" data-target="#createPostModal">Create Post</button>
+</div>
+<br>
+
+<table style="width:100%; text-align:center; font-size: 12pt;" class="table table-striped table-hover"
+    id="scriptBoardTable">
+    <thead style="font-size: 14pt">
+        <th style="width: 5%;">No.</th>
+        <th>제목</th>
+        <th style="width: 15%;">작성일</th>
+        <th style="width: 5%;">조회</th>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+
+<!-- 모달 영역 -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Delete Repository</h4>
+            </div>
+            <div class="modal-body" style="line-height: 50px;" id="createRepoData">
+                Password <input type="password" class="form-control" style="height: 35px;" id="repoData_password" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="delete_repository()">확인</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">취소</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 모달 영역 -->
+<div class="modal fade" id="createPostModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel">Create Post</h4>
+            </div>
+            <div class="modal-body" style="line-height: 50px;" id="createRepoData">
+                <input type="text" class="form-control" style="height: 35px;" id="repoData_script_title"
+                    placeholder="Title" />
+                <textarea class="form-control mt-3" rows="20" style="resize: none;" placeholder="Script Content"
+                    id="repoData_script_content"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="create_post()">확인</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">취소</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 모달 영역 -->
+<div class="modal fade" id="showPostModal" tabindex="-1" role="dialog" aria-labelledby="postTitle">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="postTitle"></h4>
+            </div>
+            <div class="modal-body" style="line-height: 50px; height: 600px;" id="createRepoData">
+                <pre class="pre-scrollable modal-body" id="postContent"
+                    style="font-size: 18px; line-height: 30px; white-space: pre-wrap; min-height: 560px;">
+
+                </pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="copy_all()">복사</button>
+                <button type="button" class="btn btn-default" onclick="delete_post()">삭제</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block ch4njun %}
+{{ block.super }}
+<script>
+    var repo_id = "{{ id }}";
+
+    $(function () {
+        $("#createPostModal").on("dragenter", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }).on("dragover", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }).on("dragleave", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }).on("drop", function (e) {
+            e.preventDefault();
+
+            var files = e.originalEvent.dataTransfer.files;
+            if (files != null && files != undefined) {
+                var tag = "";
+                file = files[0];
+
+                var fileName = file.name;
+                var fileSize = file.size;
+                fileSize = fileSize < 1 ? fileSize.toFixed(3) : fileSize.toFixed(1);
+
+                if (file.type !== 'text/javascript') {
+                    alert('Only Javascript File!');
+                } else if(!fileName.endsWith('.js')) {
+                    alert('Only Javascript File!');
+                } else if(fileSize > 1048576) {
+                    alert(fileSize);
+                } else {
+                    var r = new FileReader();
+                    r.onload = function (e) {
+                        var fileContent = e.target.result;
+                        $('#repoData_script_content').val(fileContent);
+                    }
+                    r.readAsText(file);
+                    $('#repoData_script_title').val(fileName);
+                }
+            }
+        });
+    });
+
+    function copy_all() {
+        // var tempElem = document.createElement('textarea');
+        // tempElem.value = "123124123";
+        // document.body.appendChild(tempElem);
+
+        // tempElem
+        // tempElem.select();
+        // tempElem.setSelectionRange(0, 99999);
+
+        // document.execCommand("copy"); 
+        // document.body.removeChild(tempElem);
+    }
+
+    function delete_post() {
+          
+    }
+
+    function show_post(id) {
+        $.ajax({
+            "url": "/getPost",
+            "type": "GET",
+            "data": { post_id: id },
+            "success": function (data) {
+                console.log(data.data[0].content);
+                $("#postContent").text(data.data[0].content);
+                $("#postTitle").text(data.data[0].title);
+            }
+        });
+    }
+
+    function create_post() {
+        var post_title = $('#repoData_script_title').val();
+        var post_content = $('#repoData_script_content').val();
+
+        if (post_title === '') {
+            alert('Please enter a title!');
+        } else if (post_content === '') {
+            alert('Please enter a content!');
+        } else {
+            $.ajax({
+                "url": "/postCheckName",
+                "type": "GET",
+                "data": { title: post_title, repo_id: repo_id },
+                "success": function (data) {
+                    if (data.data.length > 0) {
+                        alert('Repository Name \'' + post_title + '\' is already exists!!');
+                    } else {
+                        $.ajax({
+                            "url": "/createPost",
+                            "type": "GET",
+                            "data": { title: post_title, content: post_content, repo_id: repo_id },
+                            "success": function (data2) {
+                                location.reload();
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    function delete_repository() {
+        var password = $('#repoData_password').val();
+
+        if (password === '') {
+            alert('Please enter a password!');
+        } else {
+            $.ajax({
+                "url": "/repositorySearch",
+                "type": "GET",
+                "data": { id: repo_id },
+                "success": function (data) {
+                    if (data.data[0].repo_password === password) {
+                        $.ajax({
+                            "url": "/deleteRepository",
+                            "type": "GET",
+                            "data": { repo_id: repo_id },
+                            "success": function (data) {
+                                $('#deleteModal').modal('hide');
+                                location.href = '/repositoryList';
+                            }
+                        });
+                    } else {
+                        alert('The password is wrong!');
+                    }
+                }
+            });
+        }
+    }
+
+    $('#scriptBoardTable').DataTable({
+        "serverSide": true,
+        "ordering": false,
+        "paging": true,
+        "pagingType": "full_numbers",
+        "pageLength": 25,
+        "searching": true,
+        "ajax": {
+            "processing": true,
+            "url": "/scriptBoardSearch",
+            "data": { id: "{{ id }}" },
+            "dataSrc": function (json) {
+                $.ajax({
+                    "url": "/repositorySearch",
+                    "type": "GET",
+                    "data": { id: "{{ id }}" },
+                    "success": function (data2) {
+                        if (data2.data.length > 0)
+                            $(".page-header").children().children()[0].innerText = data2.data[0].repo_title;
+                        else
+                            $(".page-header").children().children()[0].innerText = "Not Found Error!";
+                    }
+                });
+                for (var i = 0; i < json.data.length; ++i)
+                    json.data[i]["index"] = i;
+
+                return json.data;
+            },
+        },
+        columns: [
+            { "data": "index" },
+            {
+                "render": function (data, type, row, meta) {
+                    if (type === 'display') {
+                        return "<a href='#' onclick=\"javascript:show_post(" + row.post_id + ")\" data-toggle=\"modal\" data-target=\"#showPostModal\">" + row.title + "</a>";
+                    }
+                }
+            },
+            { "data": "pub_date" },
+            { "data": "count" }
+        ],
+        bInfo: false,
+        scrollX: false,
+    });
+</script>
+{% endblock %}

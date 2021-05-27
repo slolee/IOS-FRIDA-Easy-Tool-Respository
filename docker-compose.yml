@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+        db:
+                container_name: ch4njun_db
+                image: postgres
+                restart: always
+                volumes:
+                        - ./db:/var/lib/postgresql/data
+                ports:
+                        - 5432:5432
+                environment:
+                        - POSTGRES_USER=ch4njun
+                        - POSTGRES_PASSWORD=ch4njun
+                        - POSTGRES_DB=ch4njun
+        ch4njun_web:
+                container_name: ch4njun_web
+                build:
+                        context: .
+                        dockerfile: Dockerfile
+                restart: always
+                command: /bin/bash -c "python3 manage.py makemigrations && python3 manage.py migrate && python3 manage.py runserver 0:8000"
+                ports:
+                        - "8000:8000"
+                volumes:
+                        - .:/ch4njun_web
+                depends_on:
+                        - db
+
